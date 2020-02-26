@@ -211,8 +211,7 @@ def send_info():
         # 判断是否提交成功
         result_json = json.loads(response.read().decode('utf-8'))
     except:
-        print("需手动更新表单，以往表单数据不可用")
-        return False
+        raise Exception("FromData Error", "需手动更新表单，以往表单数据不可用")
 
     if result_json["code"] == "0":
         return True
