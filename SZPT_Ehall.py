@@ -195,6 +195,7 @@ def send_info():
     response = opener.open(request)
     data = json.loads(response.read().decode('utf-8'))
 
+
     # 提交信息
     params = {
         'formData': data["datas"]
@@ -203,9 +204,13 @@ def send_info():
                                      data=urllib.parse.urlencode(params).encode(encoding='UTF-8'),
                                      method='POST', headers=header_getinfo)
     response = opener.open(request)
+    try:
+        # 判断是否提交成功
+        result_json = json.loads(response.read().decode('utf-8'))
+    except:
+        print("需手动更新表单，以往表单数据不可用")
+        return False
 
-    # 判断是否提交成功
-    result_json = json.loads(response.read().decode('utf-8'))
     if result_json["code"] == "0":
         return True
     return False

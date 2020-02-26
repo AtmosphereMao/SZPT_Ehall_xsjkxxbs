@@ -207,8 +207,13 @@ def send_info():
                                      method='POST', headers=header_getinfo)
     response = opener.open(request)
 
-    # 判断是否提交成功
-    result_json = json.loads(response.read().decode('utf-8'))
+    try:
+        # 判断是否提交成功
+        result_json = json.loads(response.read().decode('utf-8'))
+    except:
+        print("需手动更新表单，以往表单数据不可用")
+        return False
+
     if result_json["code"] == "0":
         return True
     return False
@@ -229,7 +234,7 @@ def main():
     print("-- Today End %s -------------------------------" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
 
 def work_queue():
-    schedule.every().day.at("13:00").do(main)
+    schedule.every().day.at("08:00").do(main)
     while True:
         schedule.run_pending()
 
