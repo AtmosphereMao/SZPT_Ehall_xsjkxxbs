@@ -151,7 +151,7 @@ def set_cookies():
     request = urllib.request.Request(url=GET_COOKIE_URL,        # 获取ticket参数
                                      method='GET')
     response = opener.open(request)
-    cookie.clear()  # 清除无用的cookie
+    # cookie.clear()  # 清除无用的cookie
     html = response.read().decode('utf-8')
     SAVE_COOKIE_URL = re.search('href="(.*?)">', html, re.S).group(1)
     # print(SAVE_COOKIE_URL)
@@ -194,12 +194,17 @@ def send_info():
     # 保存的参数
     response = opener.open(request)
     data = json.loads(response.read().decode('utf-8'))
-
-
+    # update 每日首次提交表单会缺失以下数据
+    temp_dict = {
+        "WID": "", "ZSDZ": "", "SXFS":"", "SFZZSXDWSS": "", "FSSJ": "", "FXSJ": "", "SSSQ": "", "XSQBDSJ": "",
+        "JSJJGCJTSJ": "", "JSJTGCJTSJ": "", "JSJJJTGCYY": "", "STYCZK": "", "STYXZK": ""
+    }
+    data["datas"].update(temp_dict)
     # 提交信息
     params = {
-        'formData': data["datas"]
+        'formData': data['datas']
     }
+
     request = urllib.request.Request(url=SAVE_INFO_POST_URL,
                                      data=urllib.parse.urlencode(params).encode(encoding='UTF-8'),
                                      method='POST', headers=header_getinfo)
