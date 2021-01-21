@@ -206,7 +206,7 @@ def send_info(user):
         result_json = json.loads(response.read().decode('utf-8'))
     except:
         print(user['username'] + "需手动更新表单，以往表单数据不可用 或 今日已填报")
-        return True
+        return False
 
     if result_json["code"] == "0":
         return True
@@ -223,6 +223,7 @@ def main():
                 print(u['username'] + "提交失败")
         else:
             print(u['username'] + "登录失败")
+        cookie.clear()
 
 if __name__ == '__main__':
     main()
