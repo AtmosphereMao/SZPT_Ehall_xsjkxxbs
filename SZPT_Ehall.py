@@ -1,4 +1,4 @@
-import urllib.request, urllib.parse, urllib.error
+﻿import urllib.request, urllib.parse, urllib.error
 import re
 import http.cookiejar
 from Crypto.Cipher import AES
@@ -45,12 +45,16 @@ APPNAME = ""
 cookie = http.cookiejar.CookieJar()
 opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookie))
 
-# 用户名与密码
-username = ''
-password = ''
+# 用户
+users = ''
 
 lt = ''
 execution = ''
+
+
+def get_config(path="./config.json"):
+    with open(path, 'r') as f:
+        return json.load(f)
 
 
 # 禁止302重定向处理
@@ -104,14 +108,14 @@ class AESCipher:
 
 
 # 密码AES加密
-def pwdEncrypt(aes_key):
+def pwdEncrypt(aes_key, password):
     pc = AESCipher(aes_key)
     password_aes = pc.encrypt(password)
     return password_aes
 
 
 # 登录
-def login():
+def login(user):
     # 登录请求
     request = urllib.request.Request(url=GET_URL,
                                      method='GET')
@@ -121,11 +125,11 @@ def login():
     # 获取登录参数
     lt = re.search('name="lt" value="(.*?)"/>', html, re.S).group(1)
     execution = re.search('name="execution" value="(.*?)"/>', html, re.S).group(1)
-    aes_key = re.search('pwdDefaultEncryptSalt = "(.*?)";', html, re.S).group(1)
-    password_aes = pwdEncrypt(aes_key)
+    aes_key = re.search('id="pwdDefaultEncryptSalt" value="(.*?)">', html, re.S).group(1)
+    password_aes = pwdEncrypt(aes_key, user['password'])
     # print(password_aes)
     params = {
-        'username': username,
+        'username': user['username'],
         'password': password_aes,
         'lt': lt,
         'dllt': 'userNamePasswordLogin',
@@ -137,7 +141,6 @@ def login():
     # 登录提交
     request = urllib.request.Request(url=POST_URL, data=urllib.parse.urlencode(params).encode(encoding='UTF-8'), method='POST')
     response = opener.open(request)
-
     # 登录判断
     if "安全退出" in response.read().decode('utf-8'):
         return True
@@ -146,22 +149,11 @@ def login():
 
 # 设置cookies
 def set_cookies():
-    # 重新定义opener（保留cookie，新增处理302重定向）
-    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookie), NoRedirHandle)
-    request = urllib.request.Request(url=GET_COOKIE_URL,        # 获取ticket参数
-                                     method='GET')
-    response = opener.open(request)
-    # cookie.clear()  # 清除无用的cookie
-    html = response.read().decode('utf-8')
-    SAVE_COOKIE_URL = re.search('href="(.*?)">', html, re.S).group(1)
-    # print(SAVE_COOKIE_URL)
-    request = urllib.request.Request(url=SAVE_COOKIE_URL,
-                                     method='GET',headers=header)   # 获取Cookie: MOD_AUTH_CAS
-    opener.open(request)
     request = urllib.request.Request(url=EHALL_URL,
-                                     method='GET', headers=header)  # 获取Cookie: _WEU,route
+                                     method='GET')  # 获取Cookie: _WEU,route
     response = opener.open(request)
     html = response.read().decode('utf-8')
+
     # 获取js中的APPID与APPNAME参数
     APPID = re.search("APPID='(.*?)';", html, re.S).group(1)
     APPNAME = re.search("APPNAME='(.*?)';", html, re.S).group(1)
@@ -180,13 +172,13 @@ def set_cookies():
     # print(cookie)
 
 
-def send_info():
+def send_info(user):
     # 设置cookies
     set_cookies()
 
     # 获取个人信息json数据
     params = {
-        'USER_ID': username
+        'USER_ID': user['username']
     }
     request = urllib.request.Request(url=GET_INFO_POST_URL,
                                      data=urllib.parse.urlencode(params).encode(encoding='UTF-8'),
@@ -209,12 +201,12 @@ def send_info():
                                      data=urllib.parse.urlencode(params).encode(encoding='UTF-8'),
                                      method='POST', headers=header_getinfo)
     response = opener.open(request)
-
     try:
         # 判断是否提交成功
         result_json = json.loads(response.read().decode('utf-8'))
     except:
-        raise Exception("FromData Error", "需手动更新表单，以往表单数据不可用")
+        print(user['username'] + "需手动更新表单，以往表单数据不可用 或 今日已填报")
+        return True
 
     if result_json["code"] == "0":
         return True
@@ -222,14 +214,15 @@ def send_info():
 
 
 def main():
-    if login():
-        if send_info():
-            print("提交成功")
+    users = get_config()['users']
+    for u in users:
+        if login(u):
+            if send_info(u):
+                print(u['username'] + "提交成功")
+            else:
+                print(u['username'] + "提交失败")
         else:
-            print("提交失败")
-    else:
-        print("登录失败")
-
+            print(u['username'] + "登录失败")
 
 if __name__ == '__main__':
     main()
